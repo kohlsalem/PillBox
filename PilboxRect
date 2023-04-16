@@ -1,9 +1,8 @@
-pills = [ // Vector with all pills [Length, Width, Heigth]
-[5,5,3],  
-
-[6,3,3],
-
-//[6,3,3]
+pills = [ // Vector with all pills ["Type", Length, Width, Heigth]
+["B",5,3,3],  
+["B",5,3,3],  
+["C",5,3],
+["B",6,3,3]
 ];
 
 size = 7; // Nr of pills
@@ -14,34 +13,74 @@ coverthickness=1;          // Size of the cover
 
 coveroffset=0.1; // offset between box and cover, depends on printer quality :-)
 
-chamfer = outerwallthickness*1.5; Chamfer on the bottom to hold the cover
+chamfer = outerwallthickness*1.5; //Chamfer on the bottom to hold the cover
 
 PillRoundoverFactor=0.3;  // Values between 0=box and 0.5=half round
 
 // Set to 0.01 for higher definition curves (renders slower)
 $fs = 0.15;
 
-//Determine maximum value of a given pos within an array of arrays
-function maxpos(a,pos, i = 0) = (i < len(a) - 1) ? max(a[i][pos], maxpos(a, pos, i+1)) : a[i][pos];
 
-//Determine the sum of a value of a given pos
+
+//**************************************************************************
+
+// Calculate the Leg of a square triangle from Hypotenuses
+function Hyp2Leg(hyp) = sqrt(hyp*hyp/2);
+
+function GetPillHeight(pill) =
+           pill[0] == "B" ? pill[3] : 
+           pill[0] == "C" ? pill[2] : 
+           echo("Unknown Pilltype",pill[0]);
+           
+function GetPillWidth(pill) =
+           pill[0] == "B" ? pill[2] : 
+           pill[0] == "C" ? pill[1] : 
+           echo("Unknown Pilltype",pill[0]);
+
+function GetPillRelativeWidth(pill) =
+           pill[0] == "B" ? pill[2] : 
+           pill[0] == "C" ? Hyp2Leg(pill[1]) : 
+           echo("Unknown Pilltype",pill[0]);
+           
+function GetPillLength(pill) = 
+           pill[0] == "B" ? pill[1] : 
+           pill[0] == "C" ? Hyp2Leg(pill[1])+pill[1] : 
+           echo("Unknown Pilltype",pill[0]);
+//Determine maximum hight of all defined pills 
+function MaxPillHeight() = max([for (pill=pills) GetPillHeight(pill)]);
+
+
+
+//Determine maximum pill width of all defined pills 
+function MaxPillWidth() = max([for(pill=pills)GetPillRelativeWidth(pill)]);
+
 function sumpos(a,pos,maxi, i = 0) = (i <= maxi - 1) ? a[i][pos]+ sumpos(a, pos, maxi, i+1) : a[i][pos];
 
-// determine which pill has the maximum width
-maxpillwith = maxpos( pills, 1);
-echo("MaxPillWidth: ",maxpillwith);
+//return the first n elements of a vector
+function FirstElements(vec,n) = n<len(vec)?[ for (i = [0:n-1])vec[i]]:vec; 
 
-// determine which pill has the maximum height
-maxpillheight = maxpos( pills, 2);
-echo("MaxPillHeight: ",maxpillheight);
+//Determine the sum all values of a vector
+function sum(v,i=0) = (i < len(v)-1) ? v[i]+sum(v,i+1) : v[i];
 
+function SumLengthRows(n=len(pills)) = sum([for (pill=FirstElements(pills,n+1)) GetPillLength(pill)]);
 
+/*
+echo("SumPillsWith:",SumLengthRows());      
+echo("MaxPillWidth: ",MaxPillWidth());
+echo("MaxPillHeight: ",MaxPillHeight());
+*/
 pillbox();
-cover();
 
-boxx=sumpos(pills,0,len(pills)-1)+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
-boxy=maxpillwith*size+innerwallthickness*(size-1)+2*outerwallthickness;
-boxz=maxpillheight+outerwallthickness;
+//covere is rendered closed, open it for better printability
+translate([0,boxy+5,boxy+coverthickness]) { 
+rotate([-90,0,0]){
+  cover();
+}}
+
+
+boxx=SumLengthRows()+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
+boxy=MaxPillWidth()*size+innerwallthickness*(size-1)+2*outerwallthickness;
+boxz=MaxPillHeight()+outerwallthickness;
     
     
     
@@ -57,24 +96,39 @@ module pillbox(){
     }
     
     // one row of Pill Cavities
-    module RowOfInnerCavities( pill,Nr=size){
-        InnerPillCavity(pill[0], pill[1], pill[2]);
-        if(Nr>1){
-         // move each pill by size and wall thickness   
-         translate([0,maxpillwith+innerwallthickness,0])    
-         RowOfInnerCavities(pill,Nr-1);   
+   
+    module RowOfOnePill( pill,Nr=size){
+      if(pill[0]=="B"){  
+        for(count=[0:size-1]){
+           translate([0,count*(MaxPillWidth()+innerwallthickness),0])
+           InnerPillCavity(pill[1], pill[2], pill[3]);
         }
+      } else if(pill[0]=="C"){ 
+        
+        for(count=[0:size-1]){
+          radius=pill[1]/2;
+          if(count%2==0){
+             translate([radius,radius+count*(MaxPillWidth()+innerwallthickness),0])
+             cylinder( h = pill[2], r=pill[1]/2 );
+          }else{
+             translate([radius+Hyp2Leg(pill[1]),radius+count*(MaxPillWidth()+innerwallthickness),0]) 
+             cylinder( h = pill[2], r=pill[1]/2 );
+          }
+          
+        }
+      }
     }
+    
   
-    module ColumnsOfInnerCavities(pills){
+    module ColumnsOfDifferentPills(pills){
       for(row=[0:len(pills)-1]){
             translate([
-              sumpos(pills,0,row) - pills[row][0] + row*innerwallthickness, 
+              SumLengthRows(row) - GetPillLength(pills[row]) + row*innerwallthickness, 
               // center the pill hole per row
-              (maxpillwith-pills[row][1])/2,
-              maxpillheight-pills[row][2]
+              (MaxPillWidth()-GetPillWidth(pills[row]))/2,
+              MaxPillHeight()-GetPillHeight(pills[row])
             ])  
-            RowOfInnerCavities(pills[row]);
+            RowOfOnePill(pills[row]);
         }  
     }
     
@@ -101,7 +155,7 @@ module pillbox(){
           } // extrude
         }} // translate/rotate
          translate([outerwallthickness,outerwallthickness,outerwallthickness])
-        ColumnsOfInnerCavities(pills);
+        ColumnsOfDifferentPills(pills);
      }// difference
    
 
@@ -109,8 +163,10 @@ module pillbox(){
 
 
 module cover(){
- // translate([-coverthickness-coveroffset,boxy,0]) { rotate([90,0,0]){
-    translate([-coverthickness-coveroffset,boxy+5,coverthickness]) { rotate([0,0,0]){
+
+
+     translate([-coverthickness-coveroffset,boxy,0]) { rotate([90,0,0]){
+ //   translate([-coverthickness-coveroffset,boxy+5,coverthickness]) { rotate([0,0,0]){
      union(){ 
        linear_extrude(boxy){ // extrude the box form side profile 
           polygon(
@@ -153,18 +209,7 @@ module cover(){
   }}//transrotate
 }
 
-module arc_between_points(p1,p2,radius) {
-  // calculate angle between points
-  angle = atan2(p2.y-p1.y,p2.x-p1.x);
-  // calculate distance between points
-  distance = sqrt(pow(p2.x-p1.x,2)+pow(p2.y-p1.y,2));
-  // calculate height of arc
-  height = radius - sqrt(pow(radius,2)-pow(distance/2,2));
-  // calculate center of circle
-  center = [p1.x+distance/2*cos(angle),p1.y+distance/2*sin(angle)];
-  // draw arc
-  translate(center) rotate([0,0,-angle*180/PI]) translate([0,height]) circle(r=radius);
-}
+
 
 // More information: https://danielupshaw.com/openscad-rounded-corners/
 module roundedcube(size = [1, 1, 1], center = false, radius = 0.5, apply_to = "all") {
