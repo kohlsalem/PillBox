@@ -1,0 +1,219 @@
+pills = [ // Vector with all pills [Length, Width, Heigth]
+[5,5,3],  
+
+[6,3,3],
+
+//[6,3,3]
+];
+
+size = 7; // Nr of pills
+
+innerwallthickness = 0.5; // Size of the inner wall between pills
+outerwallthickness = 0.75; // Size of the outer wall between pills
+coverthickness=1;          // Size of the cover
+
+coveroffset=0.1; // offset between box and cover, depends on printer quality :-)
+
+chamfer = outerwallthickness*1.5; Chamfer on the bottom to hold the cover
+
+PillRoundoverFactor=0.3;  // Values between 0=box and 0.5=half round
+
+// Set to 0.01 for higher definition curves (renders slower)
+$fs = 0.15;
+
+//Determine maximum value of a given pos within an array of arrays
+function maxpos(a,pos, i = 0) = (i < len(a) - 1) ? max(a[i][pos], maxpos(a, pos, i+1)) : a[i][pos];
+
+//Determine the sum of a value of a given pos
+function sumpos(a,pos,maxi, i = 0) = (i <= maxi - 1) ? a[i][pos]+ sumpos(a, pos, maxi, i+1) : a[i][pos];
+
+// determine which pill has the maximum width
+maxpillwith = maxpos( pills, 1);
+echo("MaxPillWidth: ",maxpillwith);
+
+// determine which pill has the maximum height
+maxpillheight = maxpos( pills, 2);
+echo("MaxPillHeight: ",maxpillheight);
+
+
+pillbox();
+cover();
+
+boxx=sumpos(pills,0,len(pills)-1)+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
+boxy=maxpillwith*size+innerwallthickness*(size-1)+2*outerwallthickness;
+boxz=maxpillheight+outerwallthickness;
+    
+    
+    
+module pillbox(){
+    
+    // one rectangular cavity holdinng one pill of given size
+    module InnerPillCavity(x,y,z){
+     if(PillRoundoverFactor == 0){    
+       cube([x,y,z]);
+     } else {
+       roundedcube([x, y, z], false, min(x,y,z)*PillRoundoverFactor, "zmin");   
+     }
+    }
+    
+    // one row of Pill Cavities
+    module RowOfInnerCavities( pill,Nr=size){
+        InnerPillCavity(pill[0], pill[1], pill[2]);
+        if(Nr>1){
+         // move each pill by size and wall thickness   
+         translate([0,maxpillwith+innerwallthickness,0])    
+         RowOfInnerCavities(pill,Nr-1);   
+        }
+    }
+  
+    module ColumnsOfInnerCavities(pills){
+      for(row=[0:len(pills)-1]){
+            translate([
+              sumpos(pills,0,row) - pills[row][0] + row*innerwallthickness, 
+              // center the pill hole per row
+              (maxpillwith-pills[row][1])/2,
+              maxpillheight-pills[row][2]
+            ])  
+            RowOfInnerCavities(pills[row]);
+        }  
+    }
+    
+
+    echo("Box:",boxx,boxy,boxz);
+    
+    difference(){ // Body minus Holes
+        
+      // somehow the body needs to be tossed around abit to match the cavities  
+      translate([0,boxy,0]) { rotate([90,0,0]){
+        
+        linear_extrude(boxy){ // extrude the box form side profile
+          polygon(
+              points=
+            [[0,chamfer],
+             [0,boxz],
+             [boxx,boxz], 
+             [boxx,chamfer], 
+              
+             [boxx-chamfer,0],
+             [chamfer,0],
+             [0,chamfer]]
+            );
+          } // extrude
+        }} // translate/rotate
+         translate([outerwallthickness,outerwallthickness,outerwallthickness])
+        ColumnsOfInnerCavities(pills);
+     }// difference
+   
+
+}
+
+
+module cover(){
+ // translate([-coverthickness-coveroffset,boxy,0]) { rotate([90,0,0]){
+    translate([-coverthickness-coveroffset,boxy+5,coverthickness]) { rotate([0,0,0]){
+     union(){ 
+       linear_extrude(boxy){ // extrude the box form side profile 
+          polygon(
+              points=
+            [[0,chamfer],
+             [0,boxz+coveroffset+coverthickness],
+             [boxx+2*coveroffset+2*coverthickness, boxz+coveroffset+coverthickness], 
+             [boxx+2*coveroffset+2*coverthickness, chamfer], 
+             [boxx+2*coveroffset+2*coverthickness-chamfer, 0], 
+             [boxx+2*coveroffset+  coverthickness-chamfer, 0],            
+             [boxx+2*coveroffset+  coverthickness, chamfer],  
+             [boxx+2*coveroffset+  coverthickness, boxz+coveroffset],  
+             [coverthickness, boxz+coveroffset],  
+             [coverthickness, chamfer],      
+             [coverthickness+chamfer, 0],   
+             [chamfer, 0],           
+             [0,chamfer]]
+            );
+         }//extrude 
+        
+       translate([0,-0,-coverthickness]){  
+               linear_extrude(coverthickness){ // extrude the box form side profile
+                  polygon(
+                      points=
+                    [[0,chamfer],
+                     [0,boxz+coveroffset+coverthickness],
+                     [boxx+2*coveroffset+2*coverthickness, boxz+coveroffset+coverthickness], 
+                     [boxx+2*coveroffset+2*coverthickness, chamfer], 
+                     [boxx+2*coveroffset+2*coverthickness-chamfer, 0], 
+                     [boxx+2*coveroffset+  coverthickness-chamfer, 0],  
+                     [boxx+2*coveroffset+  coverthickness-chamfer-(boxx-2*chamfer)/4, boxz/1.5],                 [coverthickness+chamfer+(boxx-2*chamfer)/4, boxz/1.5],
+                     [coverthickness+chamfer, 0],
+                     [chamfer, 0],               
+                     [0,chamfer]]
+                    );
+                  }//extrude
+        }    
+      }//union
+          
+  }}//transrotate
+}
+
+module arc_between_points(p1,p2,radius) {
+  // calculate angle between points
+  angle = atan2(p2.y-p1.y,p2.x-p1.x);
+  // calculate distance between points
+  distance = sqrt(pow(p2.x-p1.x,2)+pow(p2.y-p1.y,2));
+  // calculate height of arc
+  height = radius - sqrt(pow(radius,2)-pow(distance/2,2));
+  // calculate center of circle
+  center = [p1.x+distance/2*cos(angle),p1.y+distance/2*sin(angle)];
+  // draw arc
+  translate(center) rotate([0,0,-angle*180/PI]) translate([0,height]) circle(r=radius);
+}
+
+// More information: https://danielupshaw.com/openscad-rounded-corners/
+module roundedcube(size = [1, 1, 1], center = false, radius = 0.5, apply_to = "all") {
+	// If single value, convert to [x, y, z] vector
+	size = (size[0] == undef) ? [size, size, size] : size;
+
+	translate_min = radius;
+	translate_xmax = size[0] - radius;
+	translate_ymax = size[1] - radius;
+	translate_zmax = size[2] - radius;
+
+	diameter = radius * 2;
+
+	obj_translate = (center == false) ?
+		[0, 0, 0] : [
+			-(size[0] / 2),
+			-(size[1] / 2),
+			-(size[2] / 2)
+		];
+
+	translate(v = obj_translate) {
+		hull() {
+			for (translate_x = [translate_min, translate_xmax]) {
+				x_at = (translate_x == translate_min) ? "min" : "max";
+				for (translate_y = [translate_min, translate_ymax]) {
+					y_at = (translate_y == translate_min) ? "min" : "max";
+					for (translate_z = [translate_min, translate_zmax]) {
+						z_at = (translate_z == translate_min) ? "min" : "max";
+
+						translate(v = [translate_x, translate_y, translate_z])
+						if (
+							(apply_to == "all") ||
+							(apply_to == "xmin" && x_at == "min") || (apply_to == "xmax" && x_at == "max") ||
+							(apply_to == "ymin" && y_at == "min") || (apply_to == "ymax" && y_at == "max") ||
+							(apply_to == "zmin" && z_at == "min") || (apply_to == "zmax" && z_at == "max")
+						) {
+							sphere(r = radius);
+						} else {
+							rotate = 
+								(apply_to == "xmin" || apply_to == "xmax" || apply_to == "x") ? [0, 90, 0] : (
+								(apply_to == "ymin" || apply_to == "ymax" || apply_to == "y") ? [90, 90, 0] :
+								[0, 0, 0]
+							);
+							rotate(a = rotate)
+							cylinder(h = diameter, r = radius, center = true);
+						}
+					}
+				}
+			}
+		}
+	}
+}
