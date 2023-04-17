@@ -1,6 +1,6 @@
 pills = [ // Vector with all pills ["Type", Length, Width, Heigth]
-["B",5,3,3],  
-["B",5,3,3],  
+/*["B",5,3,3],  
+["B",5,3,3],  */
 ["C",5,3],
 ["B",6,3,3]
 ];
@@ -38,17 +38,17 @@ function GetPillWidth(pill) =
 
 function GetPillRelativeWidth(pill) =
            pill[0] == "B" ? pill[2] : 
-           pill[0] == "C" ? Hyp2Leg(pill[1]) : 
+           pill[0] == "C" ? pill[1]/2 : 
            echo("Unknown Pilltype",pill[0]);
            
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] : 
-           pill[0] == "C" ? Hyp2Leg(pill[1])+pill[1] : 
+           pill[0] == "C" ? pill[1]+(pill[1]+innerwallthickness)*sin(60) : 
            echo("Unknown Pilltype",pill[0]);
 //Determine maximum hight of all defined pills 
 function MaxPillHeight() = max([for (pill=pills) GetPillHeight(pill)]);
 
-
+function WallExtraPadding() = (max([for(pill=pills)GetPillWidth(pill)]) -max([for(pill=pills)GetPillRelativeWidth(pill)]))/2;
 
 //Determine maximum pill width of all defined pills 
 function MaxPillWidth() = max([for(pill=pills)GetPillRelativeWidth(pill)]);
@@ -63,11 +63,11 @@ function sum(v,i=0) = (i < len(v)-1) ? v[i]+sum(v,i+1) : v[i];
 
 function SumLengthRows(n=len(pills)) = sum([for (pill=FirstElements(pills,n+1)) GetPillLength(pill)]);
 
-/*
+
 echo("SumPillsWith:",SumLengthRows());      
 echo("MaxPillWidth: ",MaxPillWidth());
 echo("MaxPillHeight: ",MaxPillHeight());
-*/
+
 pillbox();
 
 //covere is rendered closed, open it for better printability
@@ -78,7 +78,7 @@ rotate([-90,0,0]){
 
 
 boxx=SumLengthRows()+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
-boxy=MaxPillWidth()*size+innerwallthickness*(size-1)+2*outerwallthickness;
+boxy=MaxPillWidth()*size+innerwallthickness*(size-1)+2*outerwallthickness+2*WallExtraPadding();
 boxz=MaxPillHeight()+outerwallthickness;
     
     
@@ -104,7 +104,7 @@ module pillbox(){
              translate([radius,radius+count*(MaxPillWidth()+innerwallthickness),0])
              cylinder( h = pill[2], r=pill[1]/2 );
           }else{
-             translate([radius+Hyp2Leg(pill[1]),radius+count*(MaxPillWidth()+innerwallthickness),0]) 
+             translate([radius+(2*radius+innerwallthickness)*sin(60),radius+count*(MaxPillWidth()+innerwallthickness),0]) 
              cylinder( h = pill[2], r=pill[1]/2 );
           }
           
@@ -118,7 +118,7 @@ module pillbox(){
             translate([
               SumLengthRows(row) - GetPillLength(pills[row]) + row*innerwallthickness, 
               // center the pill hole per row
-              (MaxPillWidth()-GetPillWidth(pills[row]))/2,
+              (MaxPillWidth()-GetPillWidth(pills[row]))/2+WallExtraPadding(),
               MaxPillHeight()-GetPillHeight(pills[row])
             ])  
             RowOfOnePill(pills[row]);
@@ -185,7 +185,8 @@ module cover(){
                      [boxx+2*coveroffset+2*coverthickness, chamfer], 
                      [boxx+2*coveroffset+2*coverthickness-chamfer, 0], 
                      [boxx+2*coveroffset+  coverthickness-chamfer, 0],  
-                     [boxx+2*coveroffset+  coverthickness-chamfer-(boxx-2*chamfer)/4, boxz/1.5],                 [coverthickness+chamfer+(boxx-2*chamfer)/4, boxz/1.5],
+                     [boxx+2*coveroffset+  coverthickness-chamfer-(boxx-2*chamfer)/4, boxz/1.5],                 
+                     [coverthickness+chamfer+(boxx-2*chamfer)/4, boxz/1.5],
                      [coverthickness+chamfer, 0],
                      [chamfer, 0],               
                      [0,chamfer]]
