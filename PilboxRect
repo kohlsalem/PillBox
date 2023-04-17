@@ -1,14 +1,15 @@
 pills = [ // Vector with all pills ["Type", Length, Width, Heigth]
 /*["B",5,3,3],  
 ["B",5,3,3],  */
-["C",5,3],
-["B",6,3,3]
+
+["C",7.7     ,3.8], //Lercandipin
+["B",11  ,6  ,3.8]  //Ramipril
 ];
 
 size = 7; // Nr of pills
 
-innerwallthickness = 0.5; // Size of the inner wall between pills
-outerwallthickness = 0.75; // Size of the outer wall between pills
+innerwallthickness = 1; // Size of the inner wall between pills
+outerwallthickness = 1.5; // Size of the outer wall between pills
 coverthickness=1;          // Size of the cover
 
 coveroffset=0.1; // offset between box and cover, depends on printer quality :-)
@@ -38,22 +39,26 @@ function GetPillWidth(pill) =
 
 function GetPillRelativeWidth(pill) =
            pill[0] == "B" ? pill[2] : 
-           pill[0] == "C" ? pill[1]/2 : 
+           //               Theoretically it would be the radius of the pill, but may be we have more space anyways                
+           pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) : 
            echo("Unknown Pilltype",pill[0]);
            
+           
 function GetPillLength(pill) = 
-           pill[0] == "B" ? pill[1] : 
-           pill[0] == "C" ? pill[1]+(pill[1]+innerwallthickness)*sin(60) : 
+           pill[0] == "B" ? pill[1] :  
+           pill[0] == "C" ? pill[1] + sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2 ) : 
            echo("Unknown Pilltype",pill[0]);
 //Determine maximum hight of all defined pills 
 function MaxPillHeight() = max([for (pill=pills) GetPillHeight(pill)]);
 
-function WallExtraPadding() = (max([for(pill=pills)GetPillWidth(pill)]) -max([for(pill=pills)GetPillRelativeWidth(pill)]))/2;
+function ActuallExtraPadding() = (max([for(pill=pills)GetPillWidth(pill)]) -max([for(pill=pills)GetPillRelativeWidth(pill)]))/2;
+
+   // for optical reasons, "ZigZaged"elements might overlap a bit, up to innerwallthinkness
+function WallExtraPadding() = (ActuallExtraPadding()>(outerwallthickness-innerwallthickness)) ?ActuallExtraPadding()-(outerwallthickness-innerwallthickness):0;
+
 
 //Determine maximum pill width of all defined pills 
 function MaxPillWidth() = max([for(pill=pills)GetPillRelativeWidth(pill)]);
-
-function sumpos(a,pos,maxi, i = 0) = (i <= maxi - 1) ? a[i][pos]+ sumpos(a, pos, maxi, i+1) : a[i][pos];
 
 //return the first n elements of a vector
 function FirstElements(vec,n) = n<len(vec)?[ for (i = [0:n-1])vec[i]]:vec; 
@@ -87,7 +92,7 @@ module pillbox(){
     
     // one row of Pill Cavities
    
-    module RowOfOnePill( pill,Nr=size){
+    module RowOfSamePill( pill,Nr=size){
       if(pill[0]=="B"){  
         for(count=[0:size-1]){
             
@@ -104,8 +109,9 @@ module pillbox(){
              translate([radius,radius+count*(MaxPillWidth()+innerwallthickness),0])
              cylinder( h = pill[2], r=pill[1]/2 );
           }else{
-             translate([radius+(2*radius+innerwallthickness)*sin(60),radius+count*(MaxPillWidth()+innerwallthickness),0]) 
-             cylinder( h = pill[2], r=pill[1]/2 );
+              translate([radius+ sqrt((2*radius+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2) ,
+                        radius+count*(MaxPillWidth()+innerwallthickness),0]) 
+              cylinder( h = pill[2], r=pill[1]/2 );
           }
           
         }
@@ -121,7 +127,7 @@ module pillbox(){
               (MaxPillWidth()-GetPillWidth(pills[row]))/2+WallExtraPadding(),
               MaxPillHeight()-GetPillHeight(pills[row])
             ])  
-            RowOfOnePill(pills[row]);
+            RowOfSamePill(pills[row]);
         }  
     }
     
