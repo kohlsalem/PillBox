@@ -1,59 +1,83 @@
-pills = [ // Vector with all pills ["Type", Length, Width, Heigth]
-/*["B",5,3,3],  
-["B",5,3,3],  */
+ /* This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-["C",7.7     ,3.8], //Lercandipin
-["B",11  ,6  ,3.8]  //Ramipril
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should find a copy of the GNU General Public License
+    at http://www.gnu.org/licenses/>. */
+
+/*********************************
+* Flexibly Configurable Pillbox  *
+*********************************/
+
+// Vector of pills to be drawn 
+// the first field defines the type to be rendered, the following fields describe the pill
+//
+// ["B", Length, Width, Height] - Boxlike Cavity. Exaple ["B",11  ,6  ,3.8],  //Ramipril
+// ["C", Diameter, Height ]   - Cylindrical Cavity, Layed in a ZigZag patterm, Example: ["C",7.7     ,3.8], //Lercandipin
+
+pills = [
+
+    ["C",7.7     ,3.8], //Lercandipin
+    ["B",11  ,6  ,3.8],  //Ramipril
+
 ];
 
 size = 7; // Nr of pills
 
-innerwallthickness = 1; // Size of the inner wall between pills
+innerwallthickness = 1;   // Size of the inner wall between pills
 outerwallthickness = 1.5; // Size of the outer wall between pills
-coverthickness=1;          // Size of the cover
+coverthickness=1;         // Size of the cover
 
-coveroffset=0.1; // offset between box and cover, depends on printer quality :-)
+coveroffset=0.1;          // offset between box and cover, depends on printer quality :-)
 
 chamfer = outerwallthickness*1.5; //Chamfer on the bottom to hold the cover
 
-PillRoundoverFactor=0.3;  // Values between 0=box and 0.5=half round
+pillroundoverfactor=0.3;  // Values between 0=box and 0.5=halfround for roundig up the "B" Cavities
 
 // Set to 0.01 for higher definition curves (renders slower)
 $fs = 0.15;
 
-
+//**************************************************************************
+// Ther should be no need to touch anything below here
 //**************************************************************************
 
-// Calculate the Leg of a square triangle from Hypotenuses
-function Hyp2Leg(hyp) = sqrt(hyp*hyp/2);
-
+//Height (Z) for a given Pill
 function GetPillHeight(pill) =
            pill[0] == "B" ? pill[3] : 
            pill[0] == "C" ? pill[2] : 
-           echo("Unknown Pilltype",pill[0]);
-           
+           assert(false,"Unknown Pilltype",pill[0]);
+//Width (y) for a given Pill           
 function GetPillWidth(pill) =
            pill[0] == "B" ? pill[2] : 
            pill[0] == "C" ? pill[1] : 
-           echo("Unknown Pilltype",pill[0]);
+           assert(false,"Unknown Pilltype",pill[0]);
 
+//Length (x) for a given Pill since Round pills get layed zigzag, this is the relative distance between 2 pills, not the actual size   
 function GetPillRelativeWidth(pill) =
            pill[0] == "B" ? pill[2] : 
            //               Theoretically it would be the radius of the pill, but may be we have more space anyways                
            pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) : 
-           echo("Unknown Pilltype",pill[0]);
+           assert(false,"Unknown Pilltype",pill[0]);
            
-           
+//Length (x) for a given Pill           
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] :  
            pill[0] == "C" ? pill[1] + sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2 ) : 
-           echo("Unknown Pilltype",pill[0]);
+           assert(false,"Unknown Pilltype",pill[0]);
+
 //Determine maximum hight of all defined pills 
 function MaxPillHeight() = max([for (pill=pills) GetPillHeight(pill)]);
 
+//tweek to handle the difference between logical and actual width of zigzaged objects properly. 
 function ActuallExtraPadding() = (max([for(pill=pills)GetPillWidth(pill)]) -max([for(pill=pills)GetPillRelativeWidth(pill)]))/2;
 
-   // for optical reasons, "ZigZaged"elements might overlap a bit, up to innerwallthinkness
+   // for optical reasons, "ZigZaged"elements might overlap a bit, up to innerwallthinkness. This is art, not programming. it looks better and is still good. 
 function WallExtraPadding() = (ActuallExtraPadding()>(outerwallthickness-innerwallthickness)) ?ActuallExtraPadding()-(outerwallthickness-innerwallthickness):0;
 
 
@@ -68,11 +92,6 @@ function sum(v,i=0) = (i < len(v)-1) ? v[i]+sum(v,i+1) : v[i];
 
 function SumLengthRows(n=len(pills)) = sum([for (pill=FirstElements(pills,n+1)) GetPillLength(pill)]);
 
-
-echo("SumPillsWith:",SumLengthRows());      
-echo("MaxPillWidth: ",MaxPillWidth());
-echo("MaxPillHeight: ",MaxPillHeight());
-
 pillbox();
 
 //covere is rendered closed, open it for better printability
@@ -81,13 +100,13 @@ rotate([-90,0,0]){
   cover();
 }}
 
-
+// outer dimansions of the box
 boxx=SumLengthRows()+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
 boxy=MaxPillWidth()*size+innerwallthickness*(size-1)+2*outerwallthickness+2*WallExtraPadding();
 boxz=MaxPillHeight()+outerwallthickness;
     
     
-    
+// rendering of the box    
 module pillbox(){
     
     // one row of Pill Cavities
@@ -98,7 +117,7 @@ module pillbox(){
             
            translate([0,count*(MaxPillWidth()+innerwallthickness),0])
            // one rectangular cavity holdinng one pill of given size
-           roundedbox([pill[1], pill[2], pill[3]]);
+           roundedbox([pill[1], pill[2], pill[3]],min([pill[1], pill[2]])*pillroundoverfactor);
     
         }
       } else if(pill[0]=="C"){ 
@@ -130,9 +149,7 @@ module pillbox(){
             RowOfSamePill(pills[row]);
         }  
     }
-    
 
-    echo("Box:",boxx,boxy,boxz);
     
     difference(){ // Body minus Holes
         
@@ -158,26 +175,29 @@ module pillbox(){
      }// difference
 }
 
-module cover(){
-
+// rendering of the cover 
+module cover(){  
+     //chamferthicknesscorrection, i don not want to get the chamfered part thinned out 
+     ctc = sqrt(2*coverthickness^2)-coverthickness;
+    echo("CTC",ctc);
      translate([-coverthickness-coveroffset,boxy,0]) { rotate([90,0,0]){
      union(){ 
        linear_extrude(boxy){ // extrude the box form side profile 
           polygon(
               points=
-            [[0,chamfer],
+            [[0,chamfer-ctc],
              [0,boxz+coveroffset+coverthickness],
              [boxx+2*coveroffset+2*coverthickness, boxz+coveroffset+coverthickness], 
-             [boxx+2*coveroffset+2*coverthickness, chamfer], 
-             [boxx+2*coveroffset+2*coverthickness-chamfer, 0], 
+             [boxx+2*coveroffset+2*coverthickness, chamfer-ctc], 
+             [boxx+2*coveroffset+2*coverthickness-chamfer+ctc, 0], 
              [boxx+2*coveroffset+  coverthickness-chamfer, 0],            
              [boxx+2*coveroffset+  coverthickness, chamfer],  
              [boxx+2*coveroffset+  coverthickness, boxz+coveroffset],  
              [coverthickness, boxz+coveroffset],  
              [coverthickness, chamfer],      
              [coverthickness+chamfer, 0],   
-             [chamfer, 0],           
-             [0,chamfer]]
+             [chamfer-ctc, 0],           
+             [0,chamfer-ctc]]
             );
          }//extrude 
         
@@ -185,17 +205,17 @@ module cover(){
                linear_extrude(coverthickness){ // extrude the box form side profile
                   polygon(
                       points=
-                    [[0,chamfer],
+                    [[0,chamfer-ctc],
                      [0,boxz+coveroffset+coverthickness],
                      [boxx+2*coveroffset+2*coverthickness, boxz+coveroffset+coverthickness], 
-                     [boxx+2*coveroffset+2*coverthickness, chamfer], 
-                     [boxx+2*coveroffset+2*coverthickness-chamfer, 0], 
+                     [boxx+2*coveroffset+2*coverthickness, chamfer-ctc], 
+                     [boxx+2*coveroffset+2*coverthickness-chamfer+ctc, 0], 
                      [boxx+2*coveroffset+  coverthickness-chamfer, 0],  
                      [boxx+2*coveroffset+  coverthickness-chamfer-(boxx-2*chamfer)/4, boxz/1.5],                 
                      [coverthickness+chamfer+(boxx-2*chamfer)/4, boxz/1.5],
                      [coverthickness+chamfer, 0],
-                     [chamfer, 0],               
-                     [0,chamfer]]
+                     [chamfer-ctc, 0],               
+                     [0,chamfer-ctc]]
                     );
                   }//extrude
         }    
