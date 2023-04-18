@@ -24,7 +24,7 @@
 pills = [
 
     ["C",7.7     ,3.8], //Lercandipin
-    ["B",11  ,6  ,3.8],  //Ramipril
+    ["B",11  ,3  ,3.8],  //Ramipril
 
 ];
 
@@ -44,7 +44,7 @@ pillroundoverfactor=0.3;  // Values between 0=box and 0.5=halfround for roundig 
 $fs = 0.15;
 
 //**************************************************************************
-// Ther should be no need to touch anything below here
+// There should be no need to touch anything below here
 //**************************************************************************
 
 //Height (Z) for a given Pill
@@ -65,11 +65,15 @@ function GetPillRelativeWidth(pill) =
            pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) : 
            assert(false,"Unknown Pilltype",pill[0]);
            
+ // Avoid Negative and unknown        
+function PLUS(x)=(x==undef)?0:(x>0)?x:0;           
+     
 //Length (x) for a given Pill           
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] :  
-           pill[0] == "C" ? pill[1] + sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2 ) : 
+           pill[0] == "C" ? pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2 )) : 
            assert(false,"Unknown Pilltype",pill[0]);
+
 
 //Determine maximum hight of all defined pills 
 function MaxPillHeight() = max([for (pill=pills) GetPillHeight(pill)]);
@@ -128,7 +132,7 @@ module pillbox(){
              translate([radius,radius+count*(MaxPillWidth()+innerwallthickness),0])
              cylinder( h = pill[2], r=pill[1]/2 );
           }else{
-              translate([radius+ sqrt((2*radius+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2) ,
+              translate([radius+ PLUS(sqrt((2*radius+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2)) ,
                         radius+count*(MaxPillWidth()+innerwallthickness),0]) 
               cylinder( h = pill[2], r=pill[1]/2 );
           }
