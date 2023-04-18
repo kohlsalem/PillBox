@@ -23,14 +23,14 @@
 
 pills = [
 
-    ["C",7.7     ,3.8], //Lercandipin
-    ["B",11  ,3  ,3.8],  //Ramipril
+    ["C", 7.7         ,3.8], //Lercandipin
+    ["B", 11,   ,7.7  ,3.8],  //Ramipril
 
 ];
 
 size = 7; // Nr of pills
 
-innerwallthickness = 1;   // Size of the inner wall between pills
+innerwallthickness = 0;   // Size of the inner wall between pills
 outerwallthickness = 1.5; // Size of the outer wall between pills
 coverthickness=1;         // Size of the cover
 
@@ -62,16 +62,16 @@ function GetPillWidth(pill) =
 function GetPillRelativeWidth(pill) =
            pill[0] == "B" ? pill[2] : 
            //               Theoretically it would be the radius of the pill, but may be we have more space anyways                
-           pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) : 
+           pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) -innerwallthickness/2: 
            assert(false,"Unknown Pilltype",pill[0]);
-           
+echo( "RelWith",GetPillRelativeWidth( pills[0]));          
  // Avoid Negative and unknown        
 function PLUS(x)=(x==undef)?0:(x>0)?x:0;           
      
 //Length (x) for a given Pill           
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] :  
-           pill[0] == "C" ? pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2 )) : 
+           pill[0] == "C" ? pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness+innerwallthickness/2)^2 )) : 
            assert(false,"Unknown Pilltype",pill[0]);
 
 
@@ -132,7 +132,8 @@ module pillbox(){
              translate([radius,radius+count*(MaxPillWidth()+innerwallthickness),0])
              cylinder( h = pill[2], r=pill[1]/2 );
           }else{
-              translate([radius+ PLUS(sqrt((2*radius+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness)^2)) ,
+              echo(2*radius ,GetPillRelativeWidth(pill));
+              translate([radius+ PLUS(sqrt((2*radius+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness+innerwallthickness/2)^2)),
                         radius+count*(MaxPillWidth()+innerwallthickness),0]) 
               cylinder( h = pill[2], r=pill[1]/2 );
           }
