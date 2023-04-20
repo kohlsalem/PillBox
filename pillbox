@@ -24,7 +24,7 @@
 pills = [
 
     ["S", 2   ,3.8], //Lercandipin
-    ["B", 11 ,8 ,3.8],  //Ramipril
+    ["B", 11 ,10 ,3.8],  //Ramipril
 
 ];
 
@@ -48,8 +48,8 @@ $fs = 0.15;
 //**************************************************************************
 
 // if an inner wall is angled in 45°, its actual size is a bit wider. this is the difference
-innerwallthickness45correct = sqrt(2*innerwallthickness^2)-innerwallthickness;
-
+innerwallthickness45correct = innerwallthickness-sqrt(2*innerwallthickness^2)/2;
+echo("innerwallthickness45correct",innerwallthickness45correct);
 
 //Height (Z) for a given Pill
 function GetPillHeight(pill) =
@@ -61,7 +61,7 @@ function GetPillHeight(pill) =
 
 
 //this shall be the actual thickness of the theoreticall inner round pill of the rhomb
-function SWidthFromMax(pill)= sqrt((MaxPillWidth() - innerwallthickness45correct)^2*2);
+function SWidthFromMax(pill)= sqrt((MaxPillWidth() + innerwallthickness45correct)^2*2);
 
 function GetPillWidth(pill) =
            pill[0] == "B" ? pill[2] : 
@@ -170,11 +170,12 @@ module pillbox(){
           
         }
       } else if(pill[0]=="S"){ innerwallthickness45correct = sqrt(2*innerwallthickness^2)-innerwallthickness;
-        //readd the innerwall correctionfactor to pillsize   
+     
         rhombsize=GetPillWidth(pill);
         echo("rhombsize",rhombsize); 
         echo("GetPillWidth",GetPillWidth(pill));
-     
+   translatex = MaxPillWidth()+innerwallthickness;
+        echo("translatex",translatex);
         for(count=[0:size-1]){
           radius=pill[1]/2;
           
@@ -183,10 +184,10 @@ module pillbox(){
              //cube([rhombsize, rhombsize, pill[2]]);
              rhombbox( rhombsize, pill[2] );
           }else{
-          
+               
                 // as you can see, the right sidward move to be "straight line" in case an "perfect zigzag" otherwise is pure Magic :-)
                 // it considers the acrual space we need (2r+wall) and the actual place we have 
-              translate([sqrt((GetPillWidth(pill)/2)^2*2)+innerwallthickness+innerwallthickness45correct,0,0])
+              translate([translatex,0,0])
               translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
            //cube([rhombsize, rhombsize, pill[2]]);
               rhombbox( rhombsize, pill[2] );
