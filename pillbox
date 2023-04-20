@@ -88,7 +88,9 @@ echo("GetPillRelativeWidth",GetPillRelativeWidth(pills[0]));
 echo("GetPillWidth",GetPillWidth(pills[0]));
 echo("GetPillLength",GetPillLength(pills[0]));
 echo("SWidthFromMax",SWidthFromMax());
-echo("MaxPillWidth",MaxPillWidth());                                 
+echo("MaxPillWidth",MaxPillWidth());   
+echo("GetPillLength",GetPillLength(pills[0]));
+                                 
  // Avoid Negative and unknown        
 function PLUS(x)=(x==undef)?0:(x>0)?x:0;           
      
@@ -96,8 +98,8 @@ function PLUS(x)=(x==undef)?0:(x>0)?x:0;
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] :  
            pill[0] == "C" ? pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness+innerwallthickness/2)^2 )) : 
-                            // shift upwards * once the "innercirclediameter one radius+innerwall
-           pill[0] == "S" ? GetPillWidth(pill)+GetPillWidth(pill)/2+innerwallthickness+innerwallthickness45correct:
+                            // shift upwards + one innercirclediameter one radius+innerwall
+           pill[0] == "S" ? GetPillWidth(pill)+MaxPillWidth()+innerwallthickness://GetPillWidth(pill)+GetPillWidth(pill)/2+innerwallthickness+innerwallthickness45correct:
                                  
            assert(false,"Unknown Pilltype",pill[0]);
 
@@ -170,7 +172,8 @@ module pillbox(){
           
         }
       } else if(pill[0]=="S"){ innerwallthickness45correct = sqrt(2*innerwallthickness^2)-innerwallthickness;
-     
+        intersection(){
+          
         rhombsize=GetPillWidth(pill);
         echo("rhombsize",rhombsize); 
         echo("GetPillWidth",GetPillWidth(pill));
@@ -185,16 +188,17 @@ module pillbox(){
              rhombbox( rhombsize, pill[2] );
           }else{
                
-                // as you can see, the right sidward move to be "straight line" in case an "perfect zigzag" otherwise is pure Magic :-)
                 // it considers the acrual space we need (2r+wall) and the actual place we have 
               translate([translatex,0,0])
               translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
            //cube([rhombsize, rhombsize, pill[2]]);
               rhombbox( rhombsize, pill[2] );
-          }       
+          }//if even       
    
           
-        }
+        }//for
+        translate([0,0,-1])cube([GetPillLength(pill),size*(MaxPillWidth()+innerwallthickness)+2*WallExtraPadding(),pill[2]+1]);  
+      }//diff
       }
     }
     
