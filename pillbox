@@ -23,12 +23,13 @@
 
 pills = [
 
-  //  ["S", 2   ,3.8], //Lercandipin
+    ["S", 7.7   ,3.8], //Lercandipin
+    ["S",7.7     ,3.8],
     ["B", 11,6 ,3.8],  //Ramipril
-["S",7.7     ,3.8]
+
 ];
 
-size = 7; // Nr of pills
+size = 6; // Nr of pills
 
 innerwallthickness = 1;   // Size of the inner wall between pills
 outerwallthickness = 1.5; // Size of the outer wall between pills
@@ -170,32 +171,52 @@ module pillbox(){
         } else if(pill[0]=="S"){ 
            //cut away rhomb overlap
             intersection(){
-              
-                rhombsize=GetPillWidth(pill); // yes, the size of the rhomb equals the logical width of hte row
-         
-                for(count=[0:size-1]){
-                  radius=pill[1]/2;
-                  
-                   if(count%2==0){
-                     translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
-                     //cube([rhombsize, rhombsize, pill[2]]);
-                     rhombbox( rhombsize, pill[2] );
-                  }else{
-                       
-                        // it considers the acrual space we need (2r+wall) and the actual place we have 
-                      translate([MaxPillWidth()+innerwallthickness,0,0])
-                      translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
-                   //cube([rhombsize, rhombsize, pill[2]]);
-                      rhombbox( rhombsize, pill[2] );
-                  }//if even       
-           
-                  
-                }//for 
+                union(){
+                    rhombsize=GetPillWidth(pill); // yes, the size of the rhomb equals the logical width of hte row
+                                                  // it is anyway just turned by 45 
+                    
+                    move = MaxPillWidth()+innerwallthickness;
+     
+                    // add a deco box in the beginning
+       
+                    translate([move,-move,0])rhombbox( rhombsize, pill[2] );                                       
+             
+                    for(count=[-1:size]){ // one more on each sid for deco purposes
+                      radius=pill[1]/2;
+                      
+                       if(count%2==0){
+                         translate([0,count*move,0])//Move to the right position in row 
+                         rhombbox( rhombsize, pill[2] );
+                        
+                         if(count>=0 && count <size){  // except for the outer ends,looks xxx 
+                             // add a deco box in the corner
+                             translate([2*move,count*move,0])  
+                             rhombbox( rhombsize, pill[2] );
+                         }                     
+                                  
+                      }else{
+
+                          translate([move,count*move,0])//Move to the right position in row 
+                          rhombbox( rhombsize, pill[2] );
+                          
+                         if(count>=0 && count <size){  // except for the outer ends,looks xxx                        
+                             // add a deco box in the corner
+                             translate([-move,count*move,0])  
+                             rhombbox( rhombsize, pill[2] );    
+                         }
+                      }//if even       
+               
+                      
+                    }//for 
+                    //deco for even and uneven ends
+          
+                }
                 //cut away overlapping rhombs
                 cube([GetPillLength(pill),
                         size*(MaxPillWidth()+innerwallthickness)+2*WallExtraPadding(),
                         pill[2]+1]);  
-            }//diff
+            
+            }//intersection
       }
     }
     
