@@ -23,9 +23,9 @@
 
 pills = [
 
-    ["S", 2   ,3.8], //Lercandipin
-    ["B", 11 ,10 ,3.8],  //Ramipril
-
+  //  ["S", 2   ,3.8], //Lercandipin
+    ["B", 11,6 ,3.8],  //Ramipril
+["S",7.7     ,3.8]
 ];
 
 size = 7; // Nr of pills
@@ -47,9 +47,17 @@ $fs = 0.15;
 // There should be no need to touch anything below here
 //**************************************************************************
 
+pillbox();
+
+//cover is rendered closed, open it for better printability
+translate([0,boxy+5,boxy+coverthickness]) { 
+rotate([-90,0,0]){
+  cover();
+}}
+
+
 // if an inner wall is angled in 45°, its actual size is a bit wider. this is the difference
 innerwallthickness45correct = innerwallthickness-sqrt(2*innerwallthickness^2)/2;
-echo("innerwallthickness45correct",innerwallthickness45correct);
 
 //Height (Z) for a given Pill
 function GetPillHeight(pill) =
@@ -66,8 +74,6 @@ function SWidthFromMax(pill)= sqrt((MaxPillWidth() + innerwallthickness45correct
 function GetPillWidth(pill) =
            pill[0] == "B" ? pill[2] : 
            pill[0] == "C" ? pill[1] : 
-//           pill[0] == "S" ? ((pill[1]+innerwallthickness45correct)>MaxPillWidth()) ? 
-//                              pill[1]+innerwallthickness45correct: MaxPillWidth() : 
            // this shall be the actual thickness of the theoreticall inner round pill of the rhomb
            // which ewuals to the small size of the rhomb‚
            pill[0] == "S" ? (pill[1]<SWidthFromMax(pill))? SWidthFromMax(pill):pill[1] : 
@@ -77,19 +83,13 @@ function GetPillWidth(pill) =
 function GetPillRelativeWidth(pill) = 
            pill[0] == "B" ? pill[2] : 
            //               Theoretically it would be the radius of the pill, but may be we have more space anyways                
-           pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) -innerwallthickness/2: 
+           pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) -
+                                innerwallthickness/2: 
                             // relative width WITH 45 degree wall correct
            pill[0] == "S" ? max([sqrt(pill[1]^2*2)/2+innerwallthickness45correct,
-                                 max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]): 
+                                max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]): 
            assert(false,"Unknown Pilltype",pill[0]);
 
-
-echo("GetPillRelativeWidth",GetPillRelativeWidth(pills[0]));
-echo("GetPillWidth",GetPillWidth(pills[0]));
-echo("GetPillLength",GetPillLength(pills[0]));
-echo("SWidthFromMax",SWidthFromMax());
-echo("MaxPillWidth",MaxPillWidth());   
-echo("GetPillLength",GetPillLength(pills[0]));
                                  
  // Avoid Negative and unknown        
 function PLUS(x)=(x==undef)?0:(x>0)?x:0;           
@@ -108,11 +108,11 @@ function GetPillLength(pill) =
 function MaxPillHeight() = max([for (pill=pills) GetPillHeight(pill)]);
 
 //tweek to handle the difference between logical and actual width of zigzaged objects properly. 
-function ActuallExtraPadding() = (max([for(pill=pills) GetPillWidth(pill)]) -max([for(pill=pills)GetPillRelativeWidth(pill)]))/2;
+function ActuallExtraPadding() = (max([for(pill=pills) GetPillWidth(pill)]) -
+                                  max([for(pill=pills)GetPillRelativeWidth(pill)]))/2;
 
    // for optical reasons, "ZigZaged"elements might overlap a bit, up to innerwallthinkness. This is art, not programming. it looks better and is still good. 
 function WallExtraPadding() = (ActuallExtraPadding()>(outerwallthickness-innerwallthickness)) ?ActuallExtraPadding()-(outerwallthickness-innerwallthickness):0;
-//echo("WallExtraPadding",WallExtraPadding());
 
 //Determine maximum pill width of all defined pills 
 function MaxPillWidth() = max([for(pill=pills)GetPillRelativeWidth(pill)]);
@@ -125,14 +125,6 @@ function sum(v,i=0) = (i < len(v)-1) ? v[i]+sum(v,i+1) : v[i];
 
 function SumLengthRows(n=len(pills)) = sum([for (pill=FirstElements(pills,n+1)) GetPillLength(pill)]);
 
-pillbox();
-
-//cover is rendered closed, open it for better printability
-translate([0,boxy+5,boxy+coverthickness]) { 
-rotate([-90,0,0]){
-  cover();
-}}
-
 // outer dimansions of the box
 boxx=SumLengthRows()+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
 boxy=MaxPillWidth()*size+innerwallthickness*(size-1)+2*outerwallthickness+2*WallExtraPadding();
@@ -141,103 +133,114 @@ boxz=MaxPillHeight()+outerwallthickness;
     
 // rendering of the box    
 module pillbox(){
-    
+
     // one row of Pill Cavities
    
     module RowOfSamePill( pill,Nr=size){
-      if(pill[0]=="B"){  
-        for(count=[0:size-1]){
-           translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
-           // one rectangular cavity holdinng one pill of given size
-           roundedbox([pill[1], pill[2], pill[3]],min([pill[1], pill[2]])*pillroundoverfactor);
-         //  cube([pill[1], pill[2], pill[3]]);
-        }
-      } else if(pill[0]=="C"){ 
+        if(pill[0]=="B"){  
+            for(count=[0:size-1]){
+                translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
+                // one rectangular cavity holdinng one pill of given size
+                roundedbox([pill[1], pill[2], pill[3]],min([pill[1], pill[2]])*pillroundoverfactor);
+         
+            }
+        } else if(pill[0]=="C"){ 
         
-        for(count=[0:size-1]){
-          radius=pill[1]/2;
-          if(count%2==0){
-             translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
-             translate([radius,radius,0]) // move the cylinder laft alligned, as a box would have been
-             cylinder( h = pill[2], r=pill[1]/2 );
-          }else{
-          
-                // as you can see, the right sidward move to be "straight line" in case an "perfect zigzag" otherwise is pure Magic :-)
-                // it considers the acrual space we need (2r+wall) and the actual place we have 
-              translate([PLUS(sqrt((2*radius+innerwallthickness)^2 - (MaxPillWidth()+innerwallthickness+innerwallthickness/2)^2)),0,0])
-              translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
-              translate([radius,radius,0]) // move the cylinder laft alligned, as a box would have been
-              cylinder( h = pill[2], r=pill[1]/2 );
-          }
-          
-        }
-      } else if(pill[0]=="S"){ innerwallthickness45correct = sqrt(2*innerwallthickness^2)-innerwallthickness;
-        intersection(){
-          
-        rhombsize=GetPillWidth(pill);
-        echo("rhombsize",rhombsize); 
-        echo("GetPillWidth",GetPillWidth(pill));
-   translatex = MaxPillWidth()+innerwallthickness;
-        echo("translatex",translatex);
-        for(count=[0:size-1]){
-          radius=pill[1]/2;
-          
-           if(count%2==0){
-             translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
-             //cube([rhombsize, rhombsize, pill[2]]);
-             rhombbox( rhombsize, pill[2] );
-          }else{
-               
-                // it considers the acrual space we need (2r+wall) and the actual place we have 
-              translate([translatex,0,0])
-              translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
-           //cube([rhombsize, rhombsize, pill[2]]);
-              rhombbox( rhombsize, pill[2] );
-          }//if even       
-   
-          
-        }//for
-        translate([0,0,-1])cube([GetPillLength(pill),size*(MaxPillWidth()+innerwallthickness)+2*WallExtraPadding(),pill[2]+1]);  
-      }//diff
+            for(count=[0:size-1]){
+                radius=pill[1]/2;
+                if(count%2==0){
+                    translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
+                    translate([radius,radius,0]) // move the cylinder laft alligned, as a box would have been
+                    cylinder( h = pill[2], r=pill[1]/2 );
+                }else{
+              
+                    // as you can see, the right sidward move to be "straight line" in case an 
+                    // "perfect zigzag" otherwise is pure Magic :-)
+                    // it considers the actual space we need (2r+wall) and the actual place we have 
+                    translate([PLUS(sqrt((2*radius+innerwallthickness)^2 - 
+                                 (MaxPillWidth()+innerwallthickness+innerwallthickness/2)^2)),0,0])
+                    
+                    translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
+                  
+                    translate([radius,radius,0]) // move the cylinder left alligned, as a box would have been
+                    cylinder( h = pill[2], r=pill[1]/2 );
+                }
+              
+            }
+        } else if(pill[0]=="S"){ 
+           //cut away rhomb overlap
+            intersection(){
+              
+                rhombsize=GetPillWidth(pill); // yes, the size of the rhomb equals the logical width of hte row
+         
+                for(count=[0:size-1]){
+                  radius=pill[1]/2;
+                  
+                   if(count%2==0){
+                     translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
+                     //cube([rhombsize, rhombsize, pill[2]]);
+                     rhombbox( rhombsize, pill[2] );
+                  }else{
+                       
+                        // it considers the acrual space we need (2r+wall) and the actual place we have 
+                      translate([MaxPillWidth()+innerwallthickness,0,0])
+                      translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
+                   //cube([rhombsize, rhombsize, pill[2]]);
+                      rhombbox( rhombsize, pill[2] );
+                  }//if even       
+           
+                  
+                }//for 
+                //cut away overlapping rhombs
+                cube([GetPillLength(pill),
+                        size*(MaxPillWidth()+innerwallthickness)+2*WallExtraPadding(),
+                        pill[2]+1]);  
+            }//diff
       }
     }
     
   
     module ColumnsOfDifferentPills(pills){
-      for(row=[0:len(pills)-1]){
+        for(row=[0:len(pills)-1]){
             translate([
-              SumLengthRows(row) - GetPillLength(pills[row]) + row*innerwallthickness, 
-              // center the pill hole per row. As always, S needs some extra handling :-/ (drives me nuts)
-              (MaxPillWidth()-GetPillWidth(pills[row]))/2+WallExtraPadding()+ ((pills[row][0]=="S")?innerwallthickness45correct/2:0),
-              MaxPillHeight()-GetPillHeight(pills[row])
+                // x= length of all rowa ao far - the current * + inner per row; we start with 0 so that works
+                SumLengthRows(row) - GetPillLength(pills[row]) + row*innerwallthickness, 
+          
+                // x=center the pill hole per row. 
+                (MaxPillWidth()-GetPillWidth(pills[row]))/2+WallExtraPadding()+ 
+                //As always, S needs some extra handling :-/ (drives me nuts)
+                ((pills[row][0]=="S")?innerwallthickness45correct/2:0),
+                //Y - well, the should end on the same top postion, shouldnt they?
+                MaxPillHeight()-GetPillHeight(pills[row])
             ])  
-            RowOfSamePill(pills[row]);
+            RowOfSamePill(pills[row]);//One neatly packed row 
         }  
     }
 
     
     difference(){ // Body minus Holes
         
-      // somehow the body needs to be tossed around abit to match the cavities  
-      translate([0,boxy,0]) { rotate([90,0,0]){
+        // somehow the body needs to be tossed around abit to match the cavities  
+        translate([0,boxy,0]) { rotate([90,0,0]){
         
-        linear_extrude(boxy){ // extrude the box form side profile
-          polygon(
-              points=
-            [[0,chamfer],
-             [0,boxz],
-             [boxx,boxz], 
-             [boxx,chamfer], 
-              
-             [boxx-chamfer,0],
-             [chamfer,0],
-             [0,chamfer]]
-            );
-          } // extrude
+            linear_extrude(boxy){ // extrude the box form side profile
+                polygon(
+                        points=
+                            [[0,chamfer],
+                             [0,boxz],
+                             [boxx,boxz], 
+                             [boxx,chamfer], 
+                              
+                             [boxx-chamfer,0],
+                             [chamfer,0],
+                             [0,chamfer]]
+                            );
+            } // extrude
         }} // translate/rotate
-         translate([outerwallthickness,outerwallthickness,outerwallthickness])
+        
+        translate([outerwallthickness,outerwallthickness,outerwallthickness])
         ColumnsOfDifferentPills(pills);
-     }// difference
+    }// difference
 }
 
 // rendering of the cover 
@@ -293,7 +296,8 @@ module cover(){
 module rhombbox(x,h){    
     newwidth=sqrt(x^2*2);
     translate([x/2,-(newwidth-x)/2,0])rotate([0,0,45])cube([x,x,h]);
-    translate([x/2,x/2,-1])cylinder(h=h+1, r=x/2);
+    // in case you do not believe the pill would fit, have a look
+    //translate([x/2,x/2,-1])cylinder(h=h+1, r=x/2);
 }
 
 // Create a cube with rounded eges along z
