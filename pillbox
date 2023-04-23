@@ -103,13 +103,9 @@ function GetPillLength(pill) =
            pill[0] == "C" ? pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness+innerwallthickness/2)^2 )) : 
                             // shift upwards + one innercirclediameter one radius+innerwall
            pill[0] == "S" ? 
-                  //without Kerning this gived lligned lines
-                 // 2*MaxPillWidth()+innerwallthickness :    
+                  //without Kerning this gived lligned lines: "2*MaxPillWidth()+innerwallthickness ":   
+                  //However, we do need enought space, which is 
                    GetPillWidth(pill)+MaxPillWidth()+innerwallthickness :             
-                  //6  MaxPillWidth-GetPillWidth(pill)()
-                                
-                              //GetPillWidth(pill)+GetPillWidth(pill)/2+innerwallthickness+innerwallthickness45correct:
-                                 
            assert(false,"Unknown Pilltype");
 
 
@@ -138,11 +134,10 @@ function SumLengthRows(n=len(pills)-1) = sum([for(count=[0:n]) GetPillLength(pil
 
 //Kerning - define how far 2 zigzagged rows can be moved together. The first is always 0. 
 function Kerning(n)= 
-               (n==0&&(pills[n][0]!="S")) ? 0 : 
-               // for S rows this is fairly easy
-               (pills[n][0]=="S") ? GetPillWidth(pills[n]) - MaxPillWidth()
-               //(pills[n][0]==pills[n-1][0])&&pills[n][0]=="S"? 0//+MaxPillWidth()-GetPillWidth(pills[n]) 
-/*0*(innerwallthickness+innerwallthickness45correct)*/:
+               // if this is the overall last row - no kerning
+               (n>=(size-1))? 0 :
+               // all but the last consecutive S get Kerned
+               (pills[n][0]=="S")&&(pills[n][0]==pills[n+1][0]) ? GetPillWidth(pills[n]) - MaxPillWidth() :
                0;
 
 
@@ -150,7 +145,7 @@ function Kerning(n)=
 boxx=SumLengthRows()+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
 boxy=MaxPillWidth()*size+innerwallthickness*(size-1)+2*outerwallthickness+2*WallExtraPadding();
 boxz=MaxPillHeight()+outerwallthickness;
-echo("MaxPillWidth()",MaxPillWidth());
+
     
 // rendering of the box    
 module pillbox(){
@@ -191,9 +186,6 @@ module pillbox(){
             }
         } else if(pill[0]=="S"){ 
            //cut away rhomb overlap
-           /* cube([GetPillLength(pill)-1,
-                        size*(MaxPillWidth()+innerwallthickness)+2*WallExtraPadding(),
-                        pill[2]+1]);*/
             
             intersection(){
                 union(){
@@ -209,7 +201,7 @@ module pillbox(){
                          translate([0,col*move,0])//Move to the right position in row 
                          rhombbox( rhombsize, pill[2] );
                         
-                         if(col>=0 && col <size&& false){  // except for the outer ends,looks xxx 
+                         if(col>=0 && col <size){  // except for the outer ends,looks xxx 
                              // add a deco box in the corner
                              translate([2*move,col*move,0])  
                              rhombbox( rhombsize, pill[2] );
@@ -233,7 +225,7 @@ module pillbox(){
           
                 }
                 //cut away overlapping rhombs
-              if(true)  cube([GetPillLength(pill),
+                cube([GetPillLength(pill),
                         size*(MaxPillWidth()+innerwallthickness)+2*WallExtraPadding(),
                         pill[2]+1]);  
             
@@ -244,7 +236,7 @@ module pillbox(){
   
     module ColumnsOfDifferentPills(pills){
         for(row=[0:len(pills)-1]){
-            echo("GPL",GetPillLength(pills[row]),"SPL",SumLengthRows(row),"Kerning",Kerning(row),"GPL-K",GetPillLength(pills[row])-Kerning(row));
+
             translate([
                 // x= length of all rowa ao far - the current * + inner per row; we start with 0 so that works
                 SumLengthRows(row) - (GetPillLength(pills[row]) -Kerning(row)) + row*innerwallthickness, 
@@ -338,11 +330,11 @@ module cover(){
 // a rhombus shaped stare box, but moved to a origin as a normal box  of same sice would be
 module rhombbox(x,h){    
     newwidth=sqrt(x^2*2);
-    difference(){
+    //difference(){
     translate([x/2,-(newwidth-x)/2,0])rotate([0,0,45])cube([x,x,h]);
     // in case you do not believe the pill would fit, have a look
-    translate([x/2,x/2,0])cylinder(h=1, r=x/2);
-    }
+    //translate([x/2,x/2,0])cylinder(h=1, r=x/2);
+   // }
 }
 
 // Create a cube with rounded eges along z
