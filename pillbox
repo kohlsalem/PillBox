@@ -23,10 +23,8 @@
 
 pills = [
 
-    ["S", 10   ,3.8], //Lercandipin
-    ["S", 10   ,3.8],
-    ["S", 10   ,3.8],
-    ["S", 10   ,3.8],    
+    ["S", 7.7   ,3.8], //Lercandipin
+    ["S", 7.6   ,3.8], //Lercandipin    
     ["B", 11,6 ,3.8],  //Ramipril
 
 ];
@@ -82,15 +80,27 @@ function GetPillWidth(pill) =
            pill[0] == "S" ? (pill[1]<SWidthFromMax(pill))? SWidthFromMax(pill):pill[1] : 
            assert(false,"Unknown Pilltype");
 
-//Length (y) for a given Pill since Round pills get layed zigzag, this is the relative distance between 2 pills, not the actual size   
-function GetPillRelativeWidth(pill) = 
+
+// Compaits 2 Lists of Pills
+function CompList(a,b)=
+         len(a)!=len(b)?false:
+         len(a)==0?true:
+         min([for(n=[0,len(a)-1] ) a[n]==b[n]]);
+           
+//Does a list of lists contain a given list.   
+function ContainsList(list,searchfor)=  max([for(elem=list)CompList(elem,searchfor),false]);
+            
+//Length (y) for a given Pill since Round pills get layed zigzag, this is the relative distance between 2 pills, not the actual size  
+//Nasty most recursion brake i could ever imagine
+function GetPillRelativeWidth(pill,exclude=[]) =
+           ContainsList(exclude,pill)?0:  //recursion break
            pill[0] == "B" ? pill[2] : 
            //               Theoretically it would be the radius of the pill, but may be we have more space anyways                
            pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) -
                                 innerwallthickness/2: 
                             // relative width WITH 45 degree wall correct
            pill[0] == "S" ? max([sqrt(pill[1]^2*2)/2+innerwallthickness45correct,
-                                max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]): 
+                                max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p,concat(exclude,[pill]) ):0])]): 
            assert(false,"Unknown Pilltype");
 
                                  
