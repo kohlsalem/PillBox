@@ -96,7 +96,7 @@ function GetPillRelativeWidth(pill) =
                                  
  // Avoid Negative and unknown        
 function PLUS(x)=(x==undef)?0:(x>0)?x:0;           
-     
+    
 //Length (x) for a given Pill           
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] :  
@@ -104,9 +104,9 @@ function GetPillLength(pill) =
                             // shift upwards + one innercirclediameter one radius+innerwall
            pill[0] == "S" ? 
                   //without Kerning this gived lligned lines
-                  2*MaxPillWidth()+innerwallthickness:    
-                 //GetPillWidth(pill)+MaxPillWidth()+innerwallthickness :             
-                  //  MaxPillWidth-GetPillWidth(pill)()
+                 // 2*MaxPillWidth()+innerwallthickness :    
+                   GetPillWidth(pill)+MaxPillWidth()+innerwallthickness :             
+                  //6  MaxPillWidth-GetPillWidth(pill)()
                                 
                               //GetPillWidth(pill)+GetPillWidth(pill)/2+innerwallthickness+innerwallthickness45correct:
                                  
@@ -138,13 +138,13 @@ function SumLengthRows(n=len(pills)-1) = sum([for(count=[0:n]) GetPillLength(pil
 
 //Kerning - define how far 2 zigzagged rows can be moved together. The first is always 0. 
 function Kerning(n)= 
-               (n==0) ? 0 : 
+               (n==0&&(pills[n][0]!="S")) ? 0 : 
                // for S rows this is fairly easy
-               (pills[n][0]==pills[n-1][0])&&pills[n][0]=="S"? 0://MaxPillWidth()-GetPillWidth(pills[n]) /*0*(innerwallthickness+innerwallthickness45correct)*/:
+               (pills[n][0]=="S") ? GetPillWidth(pills[n]) - MaxPillWidth()
+               //(pills[n][0]==pills[n-1][0])&&pills[n][0]=="S"? 0//+MaxPillWidth()-GetPillWidth(pills[n]) 
+/*0*(innerwallthickness+innerwallthickness45correct)*/:
                0;
- function sumKerning(n)= sum([for(count=[0:n]) Kerning(count)]);
 
-//for(count=[0:len(pills)-1])echo("Kerning",Kerning(count));
 
 // outer dimansions of the box
 boxx=SumLengthRows()+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
@@ -201,29 +201,28 @@ module pillbox(){
                                                   // it is anyway just turned by 45 
                     
                     move = MaxPillWidth()+innerwallthickness;
-     echo("MOve", move,2*move,move-sumKerning(row),2*move-sumKerning(row))
                    
                     for(col=[-1:size]){ // one more on each sid for deco purposes
                       radius=pill[1]/2;
                       
                        if(col%2==0){
-                         translate([-sumKerning(row),col*move,0])//Move to the right position in row 
+                         translate([0,col*move,0])//Move to the right position in row 
                          rhombbox( rhombsize, pill[2] );
                         
                          if(col>=0 && col <size&& false){  // except for the outer ends,looks xxx 
                              // add a deco box in the corner
-                             translate([2*move-sumKerning(row),col*move,0])  
+                             translate([2*move,col*move,0])  
                              rhombbox( rhombsize, pill[2] );
                          }                     
                                   
                       }else{
 
-                          translate([move-sumKerning(row),col*move,0])//Move to the right position in row 
+                          translate([move,col*move,0])//Move to the right position in row 
                           rhombbox( rhombsize, pill[2] );
                           
                          if(col>=0 && col <size){  // except for the outer ends,looks xxx                        
                              // add a deco box in the corner
-                             translate([-move-sumKerning(row),col*move,0])  
+                             translate([-move,col*move,0])  
                              rhombbox( rhombsize, pill[2] );    
                          }
                       }//if even       
@@ -245,11 +244,10 @@ module pillbox(){
   
     module ColumnsOfDifferentPills(pills){
         for(row=[0:len(pills)-1]){
-            echo("SumLengthRows",SumLengthRows(row),"GetPillLength",GetPillLength(pills[row]),"innerwallthickness",innerwallthickness,"Kerning",Kerning(row));
-            echo("Translate",SumLengthRows(row) - GetPillLength(pills[row]) + row*innerwallthickness);
+            echo("GPL",GetPillLength(pills[row]),"SPL",SumLengthRows(row),"Kerning",Kerning(row),"GPL-K",GetPillLength(pills[row])-Kerning(row));
             translate([
                 // x= length of all rowa ao far - the current * + inner per row; we start with 0 so that works
-                SumLengthRows(row) - GetPillLength(pills[row]) + row*innerwallthickness, 
+                SumLengthRows(row) - (GetPillLength(pills[row]) -Kerning(row)) + row*innerwallthickness, 
           
                 // x=center the pill hole per row. 
                 (MaxPillWidth()-GetPillWidth(pills[row]))/2+WallExtraPadding()+ 
