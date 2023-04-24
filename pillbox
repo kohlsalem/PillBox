@@ -1,3 +1,7 @@
+/*********************************************
+* MediMesh - the fully configurable Pillbox  *
+*********************************************/
+
  /* This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -12,26 +16,30 @@
     at http://www.gnu.org/licenses/>. */
 
 /*********************************
-* Fully Configurable Pillbox  *
+* Configuration                  *
 *********************************/
 
-// Vector of pills to be drawn 
-// the first field defines the type to be rendered, the following fields describe the pill
+// Vector of pills to be used 
 //
-// ["B", Length, Width, Height] - Boxlike Cavity. Exaple ["B",11  ,6  ,3.8],  //Ramipril
-// ["C", Diameter, Height ]   - Cylindrical Cavity, Layed in a ZigZag patterm, Example: ["C",7.7     ,3.8], //Lercandipin
-
+// the first element defines the type to be rendered, the following elements describe the pill
+//
+// ["B", Length, Width, Height] - Boxlike Cavity. 
+//      Exaple: ["B",11  ,6  ,3.8],  //Ramipril
+//
+// ["C", Diameter, Height ]   - Cylindrical Cavity, Layed in a ZigZag pattern if needed, 
+//      Example: ["C",7.7     ,3.8], //Lercandipin
+//
+// ["S", Diameter, Height ]   - Square Rhomb Pattern. Adjacent pattern get connected. Pretty decorative. THe sice will be at least the requested one, due to laws of geometry it might become bigger
+//      Example: ["S",7.7     ,3.8], //Lercandipin
+//
 pills = [
 
-    ["S", 7.7   ,8], //Lercandipin
-    ["S", 7.7   ,4], //Lercandipin
-    ["S", 7.7   ,3.8], //Lercandipin
-    ["C", 6   ,3.8], //Lercandipin    
+    ["C", 7.7 ,3.8],   //Lercandipin
     ["B", 11,6 ,3.8],  //Ramipril
 
 ];
 
-size = 7; // Nr of pills
+size = 7;  // Nr of pills
 
 innerwallthickness = 1;   // Size of the inner wall between pills
 outerwallthickness = 1.5; // Size of the outer wall between pills
@@ -39,11 +47,11 @@ coverthickness=1;         // Size of the cover
 
 coveroffset=0.1;          // offset between box and cover, depends on printer quality :-)
 
-chamfer = outerwallthickness*1.5; //Chamfer on the bottom to hold the cover
+chamfer = outerwallthickness*1.5; //Chamfer on the bottom to hold the cover in case of odd ratios you might want to give a fixed number
 
 pillroundoverfactor=0.3;  // Values between 0=box and 0.5=halfround for roundig up the "B" Cavities
 
-// Set to 0.01 for higher definition curves (renders slower)
+// Set this to 0.01 for higher definition curves (renders slower)
 $fs = 0.15;
 
 //**************************************************************************
@@ -116,8 +124,10 @@ function PLUS(x)=(x==undef)?0:(x>0)?x:0;
 //Length (x) for a given Pill           
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] :  
-           pill[0] == "C" ? pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness+innerwallthickness/2)^2 )) : 
-                            // shift upwards + one innercirclediameter one radius+innerwall
+           pill[0] == "C" ?  pill[1] + sqrt(PLUS((pill[1]+innerwallthickness)^2-MaxPillWidth()^2)) :
+                                //pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness+innerwallthickness/2)^2 )) : 
+                           
+                                // shift upwards + one innercirclediameter one radius+innerwall
            pill[0] == "S" ? 
                   //without Kerning this gived lligned lines: "2*MaxPillWidth()+innerwallthickness ":   
                   //However, we do need enought space, which is 
@@ -148,13 +158,26 @@ function sum(v,i=0) = (i < len(v)-1) ? v[i]+sum(v,i+1) : v[i];
 //function SumLengthRows(n=len(pills)) = sum([for (pill=FirstElements(pills,n+1)) GetPillLength(pill)]);
 function SumLengthRows(n=len(pills)-1) = sum([for(count=[0:n]) GetPillLength(pills[count])-Kerning(count)]);
 
-//Kerning - define how far 2 zigzagged rows can be moved together. The first is always 0. 
+//Kerning - define how far 2 zigzagged rows can be moved together. 
 function Kerning(n)= 
                // if this is the overall last row - no kerning
                (n>=(size-1))? 0 :
-               // all but the last consecutive S get Kerned
+               // all but the last consecutive S get kerned
                (pills[n][0]=="S")&&(pills[n][0]==pills[n+1][0]) ? GetPillWidth(pills[n]) - MaxPillWidth() :
+               // all but the last consecutive C get kerned
+               (pills[n][0]=="C")&&(pills[n][0]==pills[n+1][0]) ? 
+                    min([ // 3 differenc colision points to be considered, the min of them  
+                        //Inner n to Outer n+1
+                        pills[n][1]/2+pills[n+1][1]/2 + innerwallthickness - sqrt((pills[n][1]/2+pills[n+1][1]/2+innerwallthickness)^2- MaxPillWidth()^2),
+                        //Inner n to Outer n
+                        sqrt(PLUS((pills[n][1]+innerwallthickness)^2-MaxPillWidth()^2)),
+                         //Inner n+1 to Outer n+1
+                        sqrt(PLUS((pills[n+1][1]+innerwallthickness)^2-MaxPillWidth()^2))
+                    ]):
                0;
+
+
+
 // If kerning happended before or after this row, there is no need to clip the rhombs
 function ExtendBefore(row)= 
                     row<=0                            ? 0 :
@@ -199,11 +222,8 @@ module pillbox(){
                     cylinder( h = pill[2], r=pill[1]/2 );
                 }else{
               
-                    // as you can see, the right sidward move to be "straight line" in case an 
-                    // "perfect zigzag" otherwise is pure Magic :-)
-                    // it considers the actual space we need (2r+wall) and the actual place we have 
-                    translate([PLUS(sqrt((2*radius+innerwallthickness)^2 - 
-                                 (MaxPillWidth()+innerwallthickness+innerwallthickness/2)^2)),0,0])
+                    // The right sideward move to zigzag.                   
+                    translate([sqrt(PLUS((pill[1]+innerwallthickness)^2-MaxPillWidth()^2)),0,0])
                     
                     translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
                   
@@ -269,9 +289,9 @@ module pillbox(){
   
     module ColumnsOfDifferentPills(pills){
         for(row=[0:len(pills)-1]){
-
+            echo("Translate",SumLengthRows(row) - (GetPillLength(pills[row]) -Kerning(row)) + row*innerwallthickness);
             translate([
-                // x= length of all rowa ao far - the current * + inner per row; we start with 0 so that works
+                // x= length of all rows so far - the current * + inner per row; we start with 0 so that works
                 SumLengthRows(row) - (GetPillLength(pills[row]) -Kerning(row)) + row*innerwallthickness, 
           
                 // x=center the pill hole per row. 
