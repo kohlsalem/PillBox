@@ -12,7 +12,7 @@
     at http://www.gnu.org/licenses/>. */
 
 /*********************************
-* Flexibly Configurable Pillbox  *
+* Fully Configurable Pillbox  *
 *********************************/
 
 // Vector of pills to be drawn 
@@ -23,8 +23,10 @@
 
 pills = [
 
+    ["S", 7.7   ,8], //Lercandipin
+    ["S", 7.7   ,4], //Lercandipin
     ["S", 7.7   ,3.8], //Lercandipin
-    ["S", 7.6   ,3.8], //Lercandipin    
+    ["C", 6   ,3.8], //Lercandipin    
     ["B", 11,6 ,3.8],  //Ramipril
 
 ];
@@ -48,11 +50,13 @@ $fs = 0.15;
 // There should be no need to touch anything below here
 //**************************************************************************
 
+//Print the Box (Yeah)
 pillbox();
 
 //cover is rendered closed, open it for better printability
 translate([0,boxy+5,boxy+coverthickness]) { 
 rotate([-90,0,0]){
+  // print the cover
   cover();
 }}
 
@@ -66,22 +70,23 @@ function GetPillHeight(pill) =
            pill[0] == "C" ? pill[2] : 
            pill[0] == "S" ? pill[2] : 
            assert(false,"Unknown Pilltype");
-//Width (y) for a given Pill           
+          
 
-
-//this shall be the actual thickness of the theoreticall inner round pill of the rhomb
+//this shall be the actual thickness of the theoreticall inner round pill of a square rhomb
 function SWidthFromMax(pill)= sqrt((MaxPillWidth() + innerwallthickness45correct)^2*2);
 
+
+//Width (y) for a given Pill 
 function GetPillWidth(pill) =
            pill[0] == "B" ? pill[2] : 
            pill[0] == "C" ? pill[1] : 
            // this shall be the actual thickness of the theoreticall inner round pill of the rhomb
-           // which ewuals to the small size of the rhomb‚
+           // which equals to the small size of the rhomb‚
            pill[0] == "S" ? (pill[1]<SWidthFromMax(pill))? SWidthFromMax(pill):pill[1] : 
            assert(false,"Unknown Pilltype");
 
 
-// Compaits 2 Lists of Pills
+// Compair 2 Lists (2 Pills, but hey, generically is more geeky)  
 function CompList(a,b)=
          len(a)!=len(b)?false:
          len(a)==0?true:
@@ -90,13 +95,14 @@ function CompList(a,b)=
 //Does a list of lists contain a given list.   
 function ContainsList(list,searchfor)=  max([for(elem=list)CompList(elem,searchfor),false]);
             
-//Length (y) for a given Pill since Round pills get layed zigzag, this is the relative distance between 2 pills, not the actual size  
-//Nasty most recursion brake i could ever imagine
+//Relative "logical" "Theoretical" Width (y) for a given Pill 
+//since Round pills get layed zigzag, this is the relative distance between 2 pills, not the actual size  
+//Most nasty recursion brake i could ever imagine :-)
 function GetPillRelativeWidth(pill,exclude=[]) =
            ContainsList(exclude,pill)?0:  //recursion break
            pill[0] == "B" ? pill[2] : 
            //               Theoretically it would be the radius of the pill, but may be we have more space anyways                
-           pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p):0])]) -
+           pill[0] == "C" ? max([pill[1]/2,max([for(p=pills)(p!=pill)?GetPillRelativeWidth(p,concat(exclude,[pill])):0])]) -
                                 innerwallthickness/2: 
                             // relative width WITH 45 degree wall correct
            pill[0] == "S" ? max([sqrt(pill[1]^2*2)/2+innerwallthickness45correct,
@@ -104,7 +110,7 @@ function GetPillRelativeWidth(pill,exclude=[]) =
            assert(false,"Unknown Pilltype");
 
                                  
- // Avoid Negative and unknown        
+// Avoid Negative and unknown        
 function PLUS(x)=(x==undef)?0:(x>0)?x:0;           
     
 //Length (x) for a given Pill           
@@ -149,12 +155,24 @@ function Kerning(n)=
                // all but the last consecutive S get Kerned
                (pills[n][0]=="S")&&(pills[n][0]==pills[n+1][0]) ? GetPillWidth(pills[n]) - MaxPillWidth() :
                0;
+// If kerning happended before or after this row, there is no need to clip the rhombs
+function ExtendBefore(row)= 
+                    row<=0                            ? 0 :
+                    row> len(pills)-1                 ? 0 :
+                    (pills[row][0]==pills[row-1][0]) ? MaxPillWidth():0;//Any value will do, but this should work even with huge sizes
+
+function ExtendAfter(row)= 
+                    row< 0                            ? 0 :
+                    row>=len(pills)-1                 ? 0 :
+                    (pills[row][0]==pills[row+1][0]) ? MaxPillWidth():0;//Any value will do, but this should work even with huge sizes
+
+
 
 
 // outer dimansions of the box
 boxx=SumLengthRows()+(len(pills)-1)*innerwallthickness+2*outerwallthickness;
 boxy=MaxPillWidth()*size+innerwallthickness*(size-1)+2*outerwallthickness+2*WallExtraPadding();
-boxz=MaxPillHeight()+outerwallthickness;
+boxz=MaxPillHeight()+outerwallthickness-0.00001;//under sone circumstances a rounding error left the box slightly closed. 
 
     
 // rendering of the box    
@@ -211,7 +229,8 @@ module pillbox(){
                          translate([0,col*move,0])//Move to the right position in row 
                          rhombbox( rhombsize, pill[2] );
                         
-                         if(col>=0 && col <size){  // except for the outer ends,looks xxx 
+                         if(col>=0 && col <size && false && // except for the outer deco ends,looks xxx 
+                           !( row>0 && pills[row-1]=="S") ){      // Only if the neigbor is not kerned
                              // add a deco box in the corner
                              translate([2*move,col*move,0])  
                              rhombbox( rhombsize, pill[2] );
@@ -222,7 +241,8 @@ module pillbox(){
                           translate([move,col*move,0])//Move to the right position in row 
                           rhombbox( rhombsize, pill[2] );
                           
-                         if(col>=0 && col <size){  // except for the outer ends,looks xxx                        
+                         if(col>=0 && col <size && false &&// except for the outer ends,looks bad   
+                            !( row<(len(pills)-1) && pills[row+1]=="S") ){                       
                              // add a deco box in the corner
                              translate([-move,col*move,0])  
                              rhombbox( rhombsize, pill[2] );    
@@ -234,8 +254,11 @@ module pillbox(){
                     //deco for even and uneven ends
           
                 }
+        
                 //cut away overlapping rhombs
-                cube([GetPillLength(pill),
+                // If kerning happended before or after this row, there is no need to clip the rhombs
+                translate([-ExtendBefore(row),0,0])
+                cube([GetPillLength(pill)+ExtendAfter(row)+ExtendBefore(row),
                         size*(MaxPillWidth()+innerwallthickness)+2*WallExtraPadding(),
                         pill[2]+1]);  
             
