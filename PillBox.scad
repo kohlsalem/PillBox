@@ -1,6 +1,6 @@
-/*********************************************
-* MediMesh - the fully configurable Pillbox  *
-*********************************************/
+/***********************************************
+* Flexible Mini Pill Box - fully configurable  *
+***********************************************/
 
  /* This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,6 +14,15 @@
 
     You should find a copy of the GNU General Public License
     at http://www.gnu.org/licenses/>. */
+    
+/* Chat GPT says:  Say goodbye to big, bulky pill containers and hello 
+   to the sleek and stylish and fully configurable pillbox! With its 
+   innovative design, the PillBox can accommodate pills of all shapes 
+   and sizes, giving you the freedom to organize your medication your way.
+
+   So why settle for a clunky, outdated pill container when you 
+   can print a modern alternative right to your needs? 
+*/
 
 /*********************************
 * Configuration                  *
