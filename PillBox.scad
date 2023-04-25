@@ -14,15 +14,6 @@
 
     You should find a copy of the GNU General Public License
     at http://www.gnu.org/licenses/>. */
-    
-/* Chat GPT says:  Say goodbye to big, bulky pill containers and hello 
-   to the sleek and stylish and fully configurable pillbox! With its 
-   innovative design, the PillBox can accommodate pills of all shapes 
-   and sizes, giving you the freedom to organize your medication your way.
-
-   So why settle for a clunky, outdated pill container when you 
-   can print a modern alternative right to your needs? 
-*/
 
 /*********************************
 * Configuration                  *
@@ -60,8 +51,8 @@ chamfer = outerwallthickness*1.5; //Chamfer on the bottom to hold the cover in c
 
 pillroundoverfactor=0.3;  // Values between 0=box and 0.5=halfround for roundig up the "B" Cavities
 
-// Set this to 0.01 for higher definition curves (renders slower)
-$fs = 0.15;
+// Set this to 0.01 for higher definition curves (renders slower) or to 0.15 (faster)
+$fs = 0.01;
 
 //**************************************************************************
 // There should be no need to touch anything below here
@@ -367,7 +358,8 @@ module cover(){
          }//extrude 
         
        translate([0,-0,-coverthickness]){  
-               linear_extrude(coverthickness){ // extrude the box form side profile
+              difference(){
+               linear_extrude(coverthickness){ //endcap
                   polygon(
                       points=
                     [[0,chamfer-ctc],
@@ -376,13 +368,18 @@ module cover(){
                      [boxx+2*coveroffset+2*coverthickness, chamfer-ctc], 
                      [boxx+2*coveroffset+2*coverthickness-chamfer+ctc, 0], 
                      [boxx+2*coveroffset+  coverthickness-chamfer, 0],  
-                     [boxx+2*coveroffset+  coverthickness-chamfer-(boxx-2*chamfer)/4, boxz/1.5],                 
-                     [coverthickness+chamfer+(boxx-2*chamfer)/4, boxz/1.5],
+                   //  [boxx+2*coveroffset+  coverthickness-chamfer-(boxx-2*chamfer)/4, boxz/1.5],                 
+                     //[coverthickness+chamfer+(boxx-2*chamfer)/4, boxz/1.5],
                      [coverthickness+chamfer, 0],
                      [chamfer-ctc, 0],               
                      [0,chamfer-ctc]]
                     );
                   }//extrude
+                  3PCylinder([boxx+2*coveroffset+  coverthickness-chamfer, 0],
+                             [(boxx+2*coveroffset+  2*coverthickness)/2,boxz*0.7],
+                             [coverthickness+chamfer, 0],
+                              coverthickness);
+              }
         }    
       }//union
           
@@ -414,4 +411,17 @@ module roundedbox(size = [1, 1, 1], radius = 0.5) {
           translate([size[0] - radius , size[1] - radius, 0]) cylinder(h=size[2], r= radius );
       }
   }
+}
+
+
+//cylinder with a circle crossing 3 points
+module 3PCylinder(a,b,c,h){
+    A=a[0]*(b[1]-c[1])-a[1]*(b[0]-c[0])+b[0]*c[1]-c[0]*b[1];
+    B=(a[0]^2+a[1]^2)*(c[1]-b[1])      +(b[0]^2+b[1]^2)*(a[1]-c[1])      +(c[0]^2+c[1]^2)*(b[1]-a[1]);
+    C=(a[0]^2+a[1]^2)*(b[0]-c[0])      +(b[0]^2+b[1]^2)*(c[0]-a[0])      +(c[0]^2+c[1]^2)*(a[0]-b[0]);
+    D=(a[0]^2+a[1]^2)*(c[0]*b[1]-b[0]*c[1])+(b[0]^2+b[1]^2)*(a[0]*c[1]-c[0]*a[1])+(c[0]^2+c[1]^2)*(b[0]*a[1]-a[0]*b[1]);
+    xm= -B/(2*A);
+    ym= -C/(2*A);
+    r=sqrt((B^2+C^2-4*A*D)/(4*A^2));
+    translate([xm,ym]) cylinder(h=h, r=r);
 }
