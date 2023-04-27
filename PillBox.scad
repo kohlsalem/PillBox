@@ -6,12 +6,10 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
     You should find a copy of the GNU General Public License
     at http://www.gnu.org/licenses/>. */
 
@@ -35,6 +33,7 @@
 pills = [
 
     ["C", 7.7 ,3.8],   //Lercandipin
+    ["C", 7.7 ,3.8],   //Lercandipin
     ["B", 11,6 ,3.8],  //Ramipril
 
 ];
@@ -45,7 +44,7 @@ innerwallthickness = 1;   // Size of the inner wall between pills
 outerwallthickness = 1.5; // Size of the outer wall between pills
 coverthickness=1;         // Size of the cover
 
-coveroffset=0.1;          // offset between box and cover, depends on printer quality :-)
+coveroffset=0.0;          // offset between box and cover, depends on printer quality :-)
 
 chamfer = outerwallthickness*1.5; //Chamfer on the bottom to hold the cover in case of odd ratios you might want to give a fixed number
 
@@ -124,7 +123,7 @@ function PLUS(x)=(x==undef)?0:(x>0)?x:0;
 //Length (x) for a given Pill           
 function GetPillLength(pill) = 
            pill[0] == "B" ? pill[1] :  
-           pill[0] == "C" ?  pill[1] + sqrt(PLUS((pill[1]+innerwallthickness)^2-MaxPillWidth()^2)) :
+           pill[0] == "C" ?  pill[1] + sqrt(PLUS((pill[1]+innerwallthickness/2)^2-MaxPillWidth()^2)) :
                                 //pill[1] + PLUS(sqrt( (pill[1]+innerwallthickness)^2 - (GetPillRelativeWidth(pill)+innerwallthickness+innerwallthickness/2)^2 )) : 
                            
                                 // shift upwards + one innercirclediameter one radius+innerwall
@@ -168,11 +167,11 @@ function Kerning(n)=
                (pills[n][0]=="C")&&(pills[n][0]==pills[n+1][0]) ? 
                     min([ // 3 differenc colision points to be considered, the min of them  
                         //Inner n to Outer n+1
-                        pills[n][1]/2+pills[n+1][1]/2 + innerwallthickness - sqrt((pills[n][1]/2+pills[n+1][1]/2+innerwallthickness)^2- MaxPillWidth()^2),
+                        pills[n][1]/2+pills[n+1][1]/2 + innerwallthickness/2 - sqrt((pills[n][1]/2+pills[n+1][1]/2+innerwallthickness/2)^2- MaxPillWidth()^2),
                         //Inner n to Outer n
-                        sqrt(PLUS((pills[n][1]+innerwallthickness)^2-MaxPillWidth()^2)),
+                        sqrt(PLUS((pills[n][1]+innerwallthickness/2)^2-MaxPillWidth()^2)),
                          //Inner n+1 to Outer n+1
-                        sqrt(PLUS((pills[n+1][1]+innerwallthickness)^2-MaxPillWidth()^2))
+                        sqrt(PLUS((pills[n+1][1]+innerwallthickness/2)^2-MaxPillWidth()^2))
                     ]):
                0;
 
@@ -223,7 +222,7 @@ module pillbox(){
                 }else{
               
                     // The right sideward move to zigzag.                   
-                    translate([sqrt(PLUS((pill[1]+innerwallthickness)^2-MaxPillWidth()^2)),0,0])
+                    translate([sqrt(PLUS((pill[1]+innerwallthickness/2)^2-MaxPillWidth()^2)),0,0])
                     
                     translate([0,count*(MaxPillWidth()+innerwallthickness),0])//Move to the right position in row 
                   
