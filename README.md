@@ -1,5 +1,9 @@
 # PillBox
-OpenSCAD fully Configurable Pillbox
+The PillBox is a compact, space-saving solution that allows you to store and organize your medication easily. Its slim design takes up minimal space, making it perfect for use at home or on the go. Say goodbye to cluttered medicine cabinets and hello to a more organized and efficient way of storing your medication with the PillBox.
+
+This box is a fully configurable OpenSCAD model.
+
+Various options can be used,e.g.:
 
 pills = [
     ["B", 11, 6 ,3.8],  
@@ -74,4 +78,17 @@ pillroundoverfactor=0.3;  // Values between 0=box and 0.5=halfround for roundig 
 
 $fs = 0.01; // Set this to 0.01 for higher definition curves (renders slower) or to 0.15 (faster)
 
+If you never used OpenSCAD, it is relatively straight forward: 
+
+* Download and install the latest version of OpenSCAD from the official website: https://www.openscad.org/downloads.html. Choose the appropriate version for your operating system and follow the installation instructions.
+
+* After installation, launch OpenSCAD and click on the "File" menu, then select "Open" and navigate to the location where you saved the "PillBox.scad" file. Open the file.
+
+* Configure your pillbox as described above
+
+* To generate an STL file, click on the "Design" menu, then select "Compile and Render (F6)". This will compile the model and generate a preview.
+
+* If the preview looks correct, click on the "File" menu, then select "Export" and choose "STL file" from the list of options. You can choose a name and location for the STL file and then click "Save".
+
+* The STL file is now ready to be imported into a 3D printing software or sliced for printing on a 3D printer.
  
