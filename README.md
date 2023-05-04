@@ -52,13 +52,15 @@ if several cirlce lines are used, the lines do a kerning into each other.
 <img width="425" alt="img6" src="https://user-images.githubusercontent.com/16637260/235460748-18b117f1-ef68-4c6c-a48b-8936d57c7cc8.png">
 
   ["S", 7.7 ,3.8],
-  ["B", 11,6 ,3.8],  //Ramipril    
+  ["B", 11,6 ,3.8],  ´
+  
 Does the circle look to ugly? How about a pattern using square rhombs insted?
 <img width="388" alt="img7" src="https://user-images.githubusercontent.com/16637260/235460777-a6e4a06e-cd68-4129-91b9-cf8776007fc6.png">
 
   ["S", 7.7 ,3.8],
   ["S", 7.7 ,3.8],
-  ["B", 11,6 ,3.8],  //Ramipril    
+  ["B", 11,6 ,3.8],  ´   
+  
 several of this rhombs fit perfectly into each other. (took me >10h to get it right).
 <img width="434" alt="img8" src="https://user-images.githubusercontent.com/16637260/235460799-adb5eb82-b935-4e9e-88c8-7062fe42c8af.png">
 
