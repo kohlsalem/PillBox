@@ -9,8 +9,8 @@ pills = [
     ["B", 11, 6 ,3.8],  
     ["B", 10, 7 ,5  ], 
 ]
-Normal "Box size" holes will be defined with Vectors, "B" indicates box, followed by length, width and deepness.
 
+Normal "Box size" holes will be defined with Vectors, "B" indicates box, followed by length, width and deepness.
 <img width="368" alt="img1" src="https://user-images.githubusercontent.com/16637260/235460541-2912dd80-aa78-4d94-a623-643566f6f244.png">
 
 
