@@ -13,6 +13,10 @@
     You should find a copy of the GNU General Public License
     at http://www.gnu.org/licenses/>. */
 
+/***************************************
+* Customizer Section, remove till here,*
+* set pills manually below             *
+****************************************/
 /*********************************
 * Configuration                  *
 *********************************/
@@ -31,24 +35,31 @@
 //      Example: ["S",7.7     ,3.8], //Lercandipin
 //
 pills = [
-
-    ["C", 7.7 ,3.8],   //Lercandipin
-    ["C", 7.7 ,3.8],   //Lercandipin
-    ["B", 11,6 ,3.8],  //Ramipril
-
+   ["B", 12.4, 6.3  ,3.8],  //Ramipril
+   ["B", 8  ,6.3,3.8],
+   ["C", 7.7    ,3.8],   //Lercandipin
 ];
 
-size = 7;  // Nr of pills
+// Nr of pills per Row
+size = 7;  
 
-innerwallthickness = 1;   // Size of the inner wall between pills
-outerwallthickness = 1.5; // Size of the outer wall between pills
-coverthickness=1;         // Size of the cover
+//Nr of Boxes :-)
+NrOfBoxes = 4; 
 
-coveroffset=0.0;          // offset between box and cover, depends on printer quality :-)
+// Size of the inner wall between pills
+innerwallthickness = 1;   
+// Size of the outer wall between pills
+outerwallthickness = 1.5; 
+// Size of the cover
+coverthickness=1;         
+// offset between box and cover, depends on printer quality :-)
+coveroffset=0.04;          
 
-chamfer = outerwallthickness*1.5; //Chamfer on the bottom to hold the cover in case of odd ratios you might want to give a fixed number
+//Chamfer on the bottom to hold the cover in case of odd ratios you might want to give a fixed number
+chamfer = outerwallthickness*1.5; 
 
-pillroundoverfactor=0.3;  // Values between 0=box and 0.5=halfround for roundig up the "B" Cavities
+// Values between 0=box and 0.5=halfround for roundig up the "B" Cavities
+pillroundoverfactor=0.3;//[0:0.5]  
 
 // Set this to 0.01 for higher definition curves (renders slower) or to 0.15 (faster)
 $fs = 0.01;
@@ -57,15 +68,27 @@ $fs = 0.01;
 // There should be no need to touch anything below here
 //**************************************************************************
 
-//Print the Box (Yeah)
-pillbox();
+//print several boxes
+boxes(NrOfBoxes);
 
-//cover is rendered closed, open it for better printability
-translate([0,boxy+5,boxy+coverthickness]) { 
-rotate([-90,0,0]){
-  // print the cover
-  cover();
-}}
+module boxes(numberofboxes){
+    
+  for( i=[1: numberofboxes]){
+      
+    translate([(i-1)*(5+boxx+2*(coverthickness+coveroffset)), 0, 0]) {  
+      //Print the Box (Yeah)
+      pillbox();
+
+      //cover is rendered closed, open it for better printability
+      translate([0,boxy+5,boxy+coverthickness]) { 
+      rotate([-90,0,0]){
+        // print the cover
+        cover(i);
+      }}
+    }
+    
+  } 
+}
 
 
 // if an inner wall is angled in 45°, its actual size is a bit wider. this is the difference
@@ -331,7 +354,7 @@ module pillbox(){
 }
 
 // rendering of the cover 
-module cover(){  
+module cover(label){  
      //chamferthicknesscorrection, i don not want to get the chamfered part thinned out 
      ctc = sqrt(2*coverthickness^2)-coverthickness;
 
@@ -379,7 +402,26 @@ module cover(){
                              [coverthickness+chamfer, 0],
                               coverthickness);
               }
-        }    
+        }
+        if (label != 0) { 
+          translate([
+                  (boxx + 2*coveroffset + 2*coverthickness) / 2,
+                   boxz+coverthickness+0.2,
+                   boxy*0.5
+                   ]) {
+            rotate([-90, 180, 0]) {
+              linear_extrude(0.2) {
+                text(
+                      str(label),
+                      size = boxy * 0.6,
+                      halign = "center",
+                      valign = "center",
+                      font = "Liberation Sans:style=Bold"
+                );
+              }
+            }
+          }
+        }
       }//union
           
   }}//transrotate
