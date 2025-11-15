@@ -35,9 +35,11 @@
 //      Example: ["S",7.7     ,3.8], //Lercandipin
 //
 pills = [
-   ["B", 12.4, 6.3  ,3.8],  //Ramipril
+/*   ["B", 12.4, 6.3  ,3.8],  //Ramipril
    ["B", 8  ,6.3,3.8],
    ["C", 7.7    ,3.8],   //Lercandipin
+*/   ["B", 26, 10, 10],  
+   ["B", 26, 10, 10], 
 ];
 
 // Nr of pills per Row
@@ -406,14 +408,14 @@ module cover(label){
         if (label != 0) { 
           translate([
                   (boxx + 2*coveroffset + 2*coverthickness) / 2,
-                   boxz+coverthickness+0.2,
+                   boxz+0.2,
                    boxy*0.5
                    ]) {
             rotate([-90, 180, 0]) {
-              linear_extrude(0.2) {
+              linear_extrude(coverthickness+0.2) {
                 text(
                       str(label),
-                      size = boxy * 0.6,
+                      size = min(boxy * 0.6,boxx*1),
                       halign = "center",
                       valign = "center",
                       font = "Liberation Sans:style=Bold"
